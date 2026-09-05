@@ -1,29 +1,32 @@
 import Link from "next/link";
 import { Button, Card } from "@/components/ui";
 import { db } from "@/lib/db";
+import { getLocale, getTranslations } from "@/lib/i18n";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 60;
 
 export default async function Home() {
-  const [members, posts, leaders, matches] = await Promise.all([
+  const [members, posts, leaders, matches, locale] = await Promise.all([
     db.user.count({ where: { active: true } }),
     db.news.findMany({ where: { status: "PUBLISHED" }, orderBy: { publishedAt: "desc" }, take: 3, select: { slug: true, title: true, excerpt: true, publishedAt: true } }),
     db.user.findMany({ where: { active: true }, orderBy: [{ points: "desc" }, { wins: "desc" }], take: 5, select: { id: true, username: true, displayName: true, points: true, wins: true, losses: true, rank: true } }),
     db.match.findMany({ where: { status: "APPROVED" }, orderBy: { playedAt: "desc" }, take: 4, include: { playerOne: true, playerTwo: true, winner: true } }),
+    getLocale(),
   ]);
+  const t = getTranslations(locale);
   const top = leaders[0];
   return <main>
     <section className="noise grid-bg scanlines border-b border-white/10">
       <div className="mx-auto grid max-w-7xl gap-12 px-5 pb-24 pt-20 lg:grid-cols-[1.15fr_.85fr] lg:items-center lg:pb-32 lg:pt-28">
         <div className="relative z-10">
-          <p className="eyebrow">Roblox / Time Bomb Duels / Season 01</p>
+          <p className="eyebrow">{t.home.eyebrow}</p>
           <h1 className="mt-5 max-w-4xl text-6xl font-black leading-[.9] tracking-[-.07em] sm:text-7xl lg:text-[7.5rem]">NO SAFE<br/><span className="text-[#ed3044]">PLAYS.</span></h1>
-          <p className="mt-7 max-w-xl text-base leading-7 text-zinc-400 sm:text-lg">Bloodline is a competitive clan built for players who turn pressure into performance. Enter the roster, climb the tiers and leave a mark.</p>
-          <div className="mt-8 flex flex-wrap gap-3"><Button href={process.env.NEXT_PUBLIC_DISCORD_INVITE}>Enter the clan</Button><Button href="/matches" secondary>View match log</Button></div>
-          <div className="mt-12 flex flex-wrap items-center gap-x-8 gap-y-3 text-xs font-black uppercase tracking-wider text-zinc-500"><span><b className="mr-2 text-xl text-white">{members}</b> active members</span><span><b className="mr-2 text-xl text-white">{top?.points ?? 0}</b> top points</span><span><b className="mr-2 text-xl text-white">{matches.length}</b> recent verified</span></div>
+          <p className="mt-7 max-w-xl text-base leading-7 text-zinc-400 sm:text-lg">{t.home.intro}</p>
+          <div className="mt-8 flex flex-wrap gap-3"><Button href={process.env.NEXT_PUBLIC_DISCORD_INVITE}>{t.home.enter}</Button><Button href="/matches" secondary>{t.home.matchLog}</Button></div>
+          <div className="mt-12 flex flex-wrap items-center gap-x-8 gap-y-3 text-xs font-black uppercase tracking-wider text-zinc-500"><span><b className="mr-2 text-xl text-white">{members}</b> {t.home.active}</span><span><b className="mr-2 text-xl text-white">{top?.points ?? 0}</b> {t.home.top}</span><span><b className="mr-2 text-xl text-white">{matches.length}</b> {t.home.recent}</span></div>
         </div>
-        <div className="relative mx-auto w-full max-w-md lg:max-w-none">
+        <div className="arena-photo relative mx-auto w-full max-w-md rounded-2xl p-2 lg:max-w-none">
           <div className="absolute -right-4 -top-8 h-24 w-24 rounded-full border border-[#c8f451]/40 bg-[#c8f451]/10 blur-[1px]" />
           <Card className="glow-red relative overflow-hidden border-[#ed3044]/30 bg-[#10131a]/90 p-5 sm:p-7"><div className="flex items-center justify-between border-b border-white/10 pb-4"><span className="eyebrow !text-[#ed3044]">Live intel</span><span className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-[#c8f451]"><i className="h-2 w-2 rounded-full bg-[#c8f451] shadow-[0_0_12px_#c8f451]"/>Season active</span></div><div className="py-10"><div className="text-xs font-black uppercase tracking-[.25em] text-zinc-500">Current threat level</div><div className="mt-2 flex items-end gap-3"><div className="text-7xl font-black leading-none text-white">HIGH</div><div className="mb-2 text-sm font-bold text-[#ed3044]">01</div></div><div className="mt-8 grid grid-cols-5 gap-1">{["#ed3044","#ed3044","#ed3044","#c8f451","#ffffff"].map((color,index)=><span key={index} className="h-2" style={{backgroundColor:color}}/>)}</div><p className="mt-5 max-w-xs text-sm leading-6 text-zinc-400">The season is moving fast. Every verified duel changes the board.</p></div><div className="grid grid-cols-2 gap-3 border-t border-white/10 pt-4"><div><div className="text-2xl font-black">{matches.length.toString().padStart(2,"0")}</div><div className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Recent matches</div></div><Link href="/rankings" className="flex items-center justify-end text-xs font-black uppercase tracking-widest text-[#c8f451]">Open board <span className="ml-2 text-lg">↗</span></Link></div></Card>
         </div>
