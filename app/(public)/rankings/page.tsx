@@ -1,0 +1,16 @@
+import Link from "next/link";
+import { db } from "@/lib/db";
+import { Card } from "@/components/ui";
+import type { Metadata } from "next";
+
+export const dynamic = "force-dynamic";
+export const metadata: Metadata = { title: "Rankings", description: "Bloodline competitive rankings and player leaderboard." };
+export const revalidate = 30;
+
+export default async function Rankings() {
+  const [users, ranks] = await Promise.all([
+    db.user.findMany({ where: { active: true }, orderBy: [{ points: "desc" }, { wins: "desc" }], select: { id: true, username: true, displayName: true, rank: true, points: true, wins: true, losses: true } }),
+    db.ranking.findMany({ orderBy: { points: "asc" }, select: { name: true, points: true, color: true } }),
+  ]);
+  return <main className="mx-auto max-w-7xl px-5 py-16 lg:py-24"><div className="flex flex-col justify-between gap-6 border-b border-white/10 pb-10 lg:flex-row lg:items-end"><div><p className="eyebrow">Competitive board / season 01</p><h1 className="mt-3 text-5xl font-black tracking-tight sm:text-7xl">The ladder.</h1><p className="mt-5 max-w-xl text-zinc-400">Every approved match moves the board. Climb with intent.</p></div><Link href="/matches" className="text-sm font-black uppercase tracking-wider text-[#c8f451]">Submit a result ↗</Link></div><div className="mt-10 grid gap-2 sm:grid-cols-2 lg:grid-cols-5">{ranks.map((rank,index)=><div key={rank.name} className={`relative overflow-hidden rounded-xl border p-5 ${index===ranks.length-1?"border-[#ed3044]/50 bg-[#ed3044]/10":"border-white/10 bg-white/[.035]"}`}><span className="text-xs font-black text-zinc-600">0{index+1}</span><div className="mt-8 text-lg font-black">{rank.name}</div><div className="mt-1 text-xs text-zinc-500">{rank.points}+ points</div><div className="absolute bottom-0 left-0 h-1 w-full" style={{ backgroundColor: index===ranks.length-1?"#ed3044":"#c8f451", opacity: .8 }} /></div>)}</div>{users.length===0?<Card className="mt-10 p-8"><h2 className="text-xl font-bold">Leaderboard ready</h2><p className="mt-2 text-zinc-400">Player rankings will appear after the first members join and receive results.</p></Card>:<div className="mt-12 overflow-hidden rounded-xl border border-white/10"><div className="hidden grid-cols-[72px_1fr_130px_130px] bg-[#151a23] px-6 py-4 text-[10px] font-black uppercase tracking-[.2em] text-zinc-500 sm:grid"><span>Rank</span><span>Operator</span><span>Record</span><span className="text-right">Points</span></div>{users.map((user,index)=><Link href={`/members/${user.id}`} key={user.id} className="grid grid-cols-[44px_1fr_auto] items-center gap-3 border-t border-white/10 px-4 py-5 transition hover:bg-white/[.04] sm:grid-cols-[72px_1fr_130px_130px] sm:px-6"><span className={`text-xl font-black ${index<3?"text-[#ed3044]":"text-zinc-600"}`}>{String(index+1).padStart(2,"0")}</span><span className="min-w-0"><b className="block truncate text-base sm:text-lg">{user.displayName ?? user.username}</b><small className="text-xs text-zinc-500">{user.rank} · @{user.username}</small></span><span className="hidden text-sm text-zinc-400 sm:block">{user.wins}W - {user.losses}L</span><b className="text-right text-lg">{user.points}<small className="ml-1 text-[10px] text-zinc-500">PTS</small></b></Link>)}</div>}</main>;
+}

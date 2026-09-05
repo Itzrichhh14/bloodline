@@ -1,0 +1,144 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  MEMBER
+  MODERATOR
+  ADMIN
+}
+
+enum InviteStatus {
+  ACTIVE
+  USED
+  REVOKED
+}
+
+enum NewsStatus {
+  DRAFT
+  PUBLISHED
+}
+
+enum MatchStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model User {
+  id           String   @id @default(cuid())
+  discordId    String   @unique
+  username     String
+  displayName   String?
+  avatarUrl    String?
+  role         Role     @default(MEMBER)
+  bio          String?
+  robloxId     String?  @unique
+  robloxName   String?
+  wins         Int      @default(0)
+  losses       Int      @default(0)
+  points       Int      @default(0)
+  rank         String   @default("Member")
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  lastLoginAt  DateTime?
+  invitesMade  Invite[] @relation("InviteCreator")
+  inviteRedemptions InviteRedemption[]
+  news         News[]   @relation("NewsAuthor")
+  auditLogs    AuditLog[]
+  matchesAsPlayerOne Match[] @relation("MatchPlayerOne")
+  matchesAsPlayerTwo Match[] @relation("MatchPlayerTwo")
+  matchesAsWinner Match[] @relation("MatchWinner")
+  matchesSubmitted Match[] @relation("MatchSubmitter")
+  @@index([points])
+  @@index([role])
+}
+
+model Match {
+  id          String      @id @default(cuid())
+  playerOneId String
+  playerTwoId String
+  winnerId    String?
+  submitterId String
+  status      MatchStatus @default(PENDING)
+  mode        String      @default("Time Bomb Duels")
+  note        String?
+  playedAt    DateTime    @default(now())
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  playerOne   User        @relation("MatchPlayerOne", fields: [playerOneId], references: [id])
+  playerTwo   User        @relation("MatchPlayerTwo", fields: [playerTwoId], references: [id])
+  winner      User?       @relation("MatchWinner", fields: [winnerId], references: [id])
+  submitter   User        @relation("MatchSubmitter", fields: [submitterId], references: [id])
+  @@index([status, playedAt])
+  @@index([playerOneId])
+  @@index([playerTwoId])
+}
+
+model Invite {
+  id          String       @id @default(cuid())
+  code        String       @unique
+  status      InviteStatus @default(ACTIVE)
+  maxUses     Int          @default(1)
+  uses        Int          @default(0)
+  expiresAt   DateTime?
+  createdAt   DateTime     @default(now())
+  creatorId   String
+  creator     User         @relation("InviteCreator", fields: [creatorId], references: [id])
+  redemptions InviteRedemption[]
+  @@index([status])
+}
+
+model InviteRedemption {
+  id        String   @id @default(cuid())
+  inviteId  String
+  userId    String
+  usedAt    DateTime @default(now())
+  invite    Invite   @relation(fields: [inviteId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@unique([inviteId, userId])
+  @@index([userId])
+}
+
+model News {
+  id          String      @id @default(cuid())
+  slug        String      @unique
+  title       String
+  excerpt     String
+  content     String
+  status      NewsStatus  @default(DRAFT)
+  publishedAt DateTime?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  authorId    String
+  author      User        @relation("NewsAuthor", fields: [authorId], references: [id])
+  @@index([status, publishedAt])
+}
+
+model Ranking {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  slug      String   @unique
+  points    Int      @default(0)
+  tier      Int      @default(0)
+  color     String   @default("neutral")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  action    String
+  target    String?
+  metadata  Json?
+  createdAt DateTime @default(now())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  @@index([createdAt])
+}

@@ -1,0 +1,3 @@
+import Link from "next/link";
+export function Button({href,children,secondary=false}:{href?:string;children:React.ReactNode;secondary?:boolean}){const c=`inline-flex items-center justify-center rounded-lg px-5 py-3 text-sm font-black uppercase tracking-wide transition hover:-translate-y-0.5 ${secondary?"border border-white/15 bg-white/5 hover:border-white/30 hover:bg-white/10":"bg-[#ed3044] text-white shadow-[0_10px_30px_rgba(237,48,68,.22)] hover:bg-[#ff4356]"}`;return href?<Link className={c} href={href}>{children}</Link>:<button className={c}>{children}</button>}
+export function Card({children,className=""}:{children:React.ReactNode;className?:string}){return <div className={`rounded-xl border border-white/10 bg-white/[.035] ${className}`}>{children}</div>}

@@ -1,0 +1,2 @@
+import { auth } from "@/lib/auth"; import { RegisterForm } from "@/components/register-form"; import { redirect } from "next/navigation";
+export default async function Register(){const s=await auth(); if(!s?.user?.discordId) redirect("/login"); return <main className="grid min-h-[calc(100vh-64px)] place-items-center px-5"><RegisterForm discordId={s.user.discordId} username={s.user.username}/></main>}
